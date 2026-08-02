@@ -303,7 +303,7 @@ function render(){
       <div class="body">
         <div class="l1"><b>${fmtAmt(e.amt)}</b> <span class="coin">${esc(e.sym)}</span>${usd}</div>
         <div class="l2"><span class="wa" data-w="${e.addr}">${short(e.addr)}</span>${tierBadge(w.tier)}
-          · <a class="link" href="${EXPL}/tx/${e.tx}" target="_blank" rel="noopener">tx</a></div>
+          · <a class="link" href="${EXPL}/tx/${e.tx}" target="_blank" rel="noopener">tx</a>${e.token?` · <a class="link" style="color:var(--gold)" href="https://gmgn.ai/robinhood/token/${e.token}" target="_blank" rel="noopener">buy ${esc(e.sym)} ↗</a>`:""}</div>
       </div>
       <div class="ago ${fresh?'fresh':''}">${ago(e.ts)}</div>
     </div>`;
@@ -350,7 +350,7 @@ function openWallet(addr){
     <div class="evt">
       <div class="side ${e.dir}">${e.dir==="buy"?"BOUGHT":"SOLD"}</div>
       <div class="body"><div class="l1"><b>${fmtAmt(e.amt)}</b> <span class="coin">${esc(e.sym)}</span>${e.usd!=null?" · "+money(e.usd):""}</div>
-        <div class="l2"><a class="link" href="${EXPL}/tx/${e.tx}" target="_blank" rel="noopener">${(e.tx||'').slice(0,14)}…</a></div></div>
+        <div class="l2"><a class="link" href="${EXPL}/tx/${e.tx}" target="_blank" rel="noopener">${(e.tx||'').slice(0,14)}…</a>${e.token?` · <a class="link" style="color:var(--gold)" href="https://gmgn.ai/robinhood/token/${e.token}" target="_blank" rel="noopener">buy ↗</a>`:""}</div></div>
       <div class="ago">${ago(e.ts)}</div>
     </div>`).join("") || '<div class="empty">No recent token moves for this wallet.</div>';
   document.getElementById("dBody").innerHTML =
