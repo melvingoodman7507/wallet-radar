@@ -292,7 +292,7 @@ async function cycle(){
   firstLoad = false;
   render();
   document.getElementById("cycle").textContent = `cycle #${cycleN} done · re-scanning`;
-  setTimeout(cycle, 6000);
+  /* client-side chain polling disabled: feed comes from feed.json */
 }
 
 function tierBadge(t){ return t==="core"?'<span class="badge core">pack</span>':'<span class="badge clean">clean</span>'; }
@@ -458,13 +458,24 @@ document.querySelectorAll(".vt").forEach(b=>b.onclick=()=>{
 });
 setInterval(()=>{ if(!document.getElementById("viewSim").hidden) loadSim(); }, 30000);
 
-// boot
+// boot — the feed + book come from the engine's real-trade files (airdrop-free), not raw chain polling
+async function loadFeed(){
+  try{
+    const f = await (await fetch("./feed.json?t="+Date.now(),{cache:"no-store"})).json();
+    lastUpdate = Date.parse(f.updated)||now();
+    EVENTS = (f.events||[]).map(e=>({addr:e.addr,dir:e.dir,sym:e.sym,token:e.token,amt:e.amt,usd:e.usd,
+                                     ts:e.ts?Date.parse(e.ts):null,tx:e.tx}));
+    // per-wallet last activity from the feed
+    for(const e of EVENTS){ const st=STATE[e.addr]||(STATE[e.addr]={last_ts:0}); if(e.ts>st.last_ts) st.last_ts=e.ts; }
+    render();
+  }catch(err){ /* engine may not have published yet */ }
+}
 (async function(){
-  const d = await jget("./wallets.json").catch(()=>null) || await (await fetch("./wallets.json")).json();
+  const d = await (await fetch("./wallets.json")).json();
   WALLETS = d; WALLETS.forEach(w=>META[w.a]=w);
   document.getElementById("kW").textContent = WALLETS.length;
-  render();
-  cycle();
+  render(); loadFeed();
+  setInterval(loadFeed, 20000);
 })();
 </script>
 </body>
