@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Copy-trade simulator — the honest book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>📒</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,560;9..144,640&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#26221B; --panel:#2C2720; --panel2:#332D24;
+  --rule:#3E372B; --rule2:#4A4234;
+  --ink:#E9E2D2; --muted:#AFA48C; --faint:#9A8F77;
+  --ox:#D96A55; --ox-deep:#8F3A2B;
+  --forest:#7FB88B; --forest-deep:#42714F;
+  --gold:#C9A356;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --grot:'Archivo',system-ui,sans-serif;
+  --disp:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--ground);background-image:linear-gradient(180deg,#2A251D 0,#26221B 340px);
+  color:var(--ink);font:15px/1.55 var(--grot);min-height:100vh}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 72px}
+a{color:inherit}
+
+header.top{border-bottom:1px solid var(--rule2);background:#221E17}
+.topin{max-width:1000px;margin:0 auto;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:baseline}
+.brand{font-family:var(--disp);font-weight:640;font-size:19px}
+.brand small{font-family:var(--grot);font-weight:600;font-size:10px;letter-spacing:.22em;color:var(--muted);margin-left:8px;text-transform:uppercase}
+nav.main{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
+nav.main a{text-decoration:none;font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);padding:4px 10px;border-radius:3px}
+nav.main a:hover{color:var(--ink)}
+nav.main a.on{color:var(--ground);background:var(--ink)}
+.clockrow{width:100%;display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;color:var(--muted);font-size:12px}
+.clockrow .num{color:var(--ink)}
+
+section.folio{position:relative;background:var(--panel);border:1px solid var(--rule);border-radius:4px;
+  margin-top:26px;padding:18px 18px 20px 52px;box-shadow:0 1px 0 rgba(0,0,0,.35)}
+section.folio::before{content:"";position:absolute;left:30px;top:0;bottom:0;width:4px;
+  border-left:1px solid rgba(196,82,62,.38);border-right:1px solid rgba(196,82,62,.38);pointer-events:none}
+@media(max-width:620px){section.folio{padding:16px 12px 18px 26px}section.folio::before{left:12px}}
+.folio-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin-bottom:4px}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);font-family:var(--mono)}
+h2{font-family:var(--disp);font-weight:560;font-size:22px}
+h3.subhead{font-family:var(--disp);font-weight:560;font-size:17px}
+.stateline{font:12px/1.5 var(--mono);color:var(--muted);border-bottom:1px solid var(--rule);padding:6px 0 8px;margin-bottom:10px}
+.stateline::before{content:"▸ ";color:var(--faint)}
+p.note{color:var(--muted);font-size:13.5px;margin-top:10px;max-width:74ch}
+p.note b{color:var(--ink);font-weight:600}
+
+.headline{display:flex;flex-wrap:wrap;gap:8px 30px;align-items:flex-end;margin:6px 0 4px}
+.big{font-family:var(--mono);font-size:44px;font-weight:600;line-height:1.05;letter-spacing:-.02em}
+.big.up{color:var(--forest)} .big.down{color:var(--ox)}
+.bigsub{color:var(--muted);font-size:13px;max-width:46ch}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:3px;margin-top:16px;overflow:hidden}
+.kpi{background:var(--panel2);padding:11px 13px}
+.kpi .k{font:700 10px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.kpi .v{font-family:var(--mono);font-size:20px;font-weight:600;margin-top:3px}
+.kpi .h{font-size:11.5px;color:var(--muted);margin-top:2px}
+.up{color:var(--forest)} .down{color:var(--ox)} .flat{color:var(--muted)}
+
+.stamp{display:inline-block;font:700 10px/1.35 var(--grot);letter-spacing:.16em;text-transform:uppercase;
+  padding:2px 8px;border:2px solid currentColor;border-radius:3px;transform:rotate(-2deg);opacity:.92;white-space:nowrap}
+.stamp.warn{color:var(--gold)} .stamp.bad{color:var(--ox)} .stamp.good{color:var(--forest)}
+
+.scrollbox{overflow-x:auto;border:1px solid var(--rule);border-radius:3px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:760px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;vertical-align:top}
+th{font:700 10px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);
+  background:#2A251D;position:sticky;top:0}
+tbody tr:hover{background:#332D24}
+td.r,th.r{text-align:right}
+.sym{font-weight:700}
+a.ext{color:var(--gold);text-decoration:none;border-bottom:1px dotted rgba(201,163,86,.5);font-family:var(--mono);font-size:12px}
+a.ext:hover{color:var(--ink);border-bottom-color:var(--ink)}
+a.ext::after{content:"↗";font-size:9px;vertical-align:super;margin-left:2px;opacity:.7}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.chip{background:transparent;border:1px solid var(--rule2);color:var(--muted);border-radius:999px;padding:3px 11px;
+  cursor:pointer;font:600 11px/1.5 var(--grot);letter-spacing:.07em;text-transform:uppercase}
+.chip:hover{color:var(--ink);border-color:var(--muted)}
+.chip.on{background:var(--ink);color:#211D16;border-color:var(--ink)}
+.reasons{color:var(--gold);font-size:12px;white-space:normal;max-width:44ch}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px;margin-top:14px}
+.legend div{border-left:2px solid var(--rule2);padding-left:11px}
+.legend .lt{font-weight:700;font-size:13px}
+.legend .ld{color:var(--muted);font-size:12.5px;margin-top:2px}
+footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
+.err{color:var(--ox);font-family:var(--mono);font-size:13px}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin">
+  <div class="brand">Copy-trade simulator<small>paper money only</small></div>
+  <nav class="main">
+    <a href="./">Live radar</a>
+    <a class="on" href="./sim.html">Simulator</a>
+  </nav>
+  <div class="clockrow">
+    <span>Book rebuilt <span class="num" id="gen">—</span></span>
+    <span>Trades tracked <span class="num" id="ntr">—</span></span>
+    <span id="modeline">—</span>
+  </div>
+</div></header>
+
+<div class="wrap">
+
+<section class="folio">
+  <div class="folio-head"><span class="eyebrow">The bottom line</span></div>
+  <div class="stateline" id="hl-state">loading…</div>
+  <div class="headline">
+    <div><div class="big" id="hl-pnl">—</div>
+      <div class="bigsub">if we sold every open position right now, at prices we could actually get</div></div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <p class="note" id="hl-note"></p>
+</section>
+
+<section class="folio">
+  <div class="folio-head"><span class="eyebrow">Plain English</span><h2>What you are looking at</h2></div>
+  <div class="stateline">no real money has been spent — this is a scorecard, not a wallet</div>
+  <p class="note">We watch 58 crypto wallets. 30 of them have a good track record. Every time one of
+  those 30 <b>buys</b> a coin, we pretend to buy $100 of the same coin at the same moment, and we
+  write it down. When that wallet sells out, we pretend to sell too. Nothing is bought. Nothing is
+  risked. The point is to find out — <b>before</b> any real money is involved — whether following
+  these people would actually have made money.</p>
+  <div class="legend">
+    <div><div class="lt">Why our price is worse than theirs</div><div class="ld">Their own purchase
+      pushes the price up before we can react. We can never buy at the price the person we are
+      copying got. This is measured from the size of their order against the size of the pool.</div></div>
+    <div><div class="lt">Why our own order costs us too</div><div class="ld">These coins trade against
+      a pot of money. Buying takes coins out and pushes the price up against us. A $100 order into a
+      small pot moves the price far more than the same order into a big one.</div></div>
+    <div><div class="lt">The house cut</div><div class="ld">Every trade pays a fee to the pool. We
+      measured the real fee coin by coin — it ranges from 0.3% to over 5%, not the flat rate the
+      first version assumed.</div></div>
+    <div><div class="lt">You pay all of it twice</div><div class="ld">Getting out costs the same as
+      getting in. A round trip on a typical coin here costs several percent before the price has
+      moved at all — that is the toll you must beat.</div></div>
+  </div>
+</section>
+
+<section class="folio">
+  <div class="folio-head"><span class="eyebrow">Every position</span><h2>The book</h2>
+    <div class="chips" role="group">
+      <button class="chip on" data-f="all">All</button>
+      <button class="chip" data-f="open">Still open</button>
+      <button class="chip" data-f="closed">Finished</button>
+      <button class="chip" data-f="win">In profit</button>
+      <button class="chip" data-f="loss">Losing</button>
+    </div>
+  </div>
+  <div class="stateline" id="bk-state">—</div>
+  <div class="scrollbox"><table id="book">
+    <thead><tr>
+      <th>Coin</th><th>Status</th><th class="r">Staked</th><th class="r">Our buy price</th>
+      <th class="r">Price now</th><th class="r">Worth now</th><th class="r">Profit / loss</th>
+      <th class="r">Their push</th><th class="r">Pool fee</th><th>Wallet</th><th>Bought</th><th>Sold</th>
+    </tr></thead><tbody></tbody>
+  </table></div>
+  <p class="note">Every wallet address and every transaction below opens in the block explorer in a
+  new tab, so you can check any line of this yourself. <b>Their push</b> is how far that wallet's own
+  purchase moved the price before we could copy it.</p>
+</section>
+
+<section class="folio" id="sec-rej">
+  <div class="folio-head"><span class="eyebrow">Refused</span><h2>Coins the safety check would block</h2></div>
+  <div class="stateline" id="rj-state">—</div>
+  <div class="scrollbox"><table id="rej">
+    <thead><tr><th>Coin</th><th class="r">Their order</th><th>Why we would not touch it</th><th>Wallet</th><th>Transaction</th></tr></thead>
+    <tbody></tbody></table></div>
+  <p class="note">These are real buys by wallets we follow that a safety check flags — things like an
+  owner who can freeze trading, change the tax, or a pool too thin to sell back into. The headline
+  above is the <b>unfiltered</b> result. The comparison between the two is the whole question:
+  <b>is being picky worth it?</b></p>
+</section>
+
+<section class="folio" id="sec-unp">
+  <div class="folio-head"><span class="eyebrow">Excluded, and said out loud</span><h2>Trades we cannot price honestly</h2></div>
+  <div class="stateline" id="un-state">—</div>
+  <div class="scrollbox"><table id="unp">
+    <thead><tr><th>Coin</th><th class="r">Their order</th><th>Reason</th><th>Wallet</th><th>Transaction</th></tr></thead>
+    <tbody></tbody></table></div>
+  <p class="note">We could not measure the pool behind these coins, so we do not know what buying or
+  selling them would really cost. Rather than guess a friendly number and quietly fold them into the
+  total, they sit here, counted and visible, outside the headline.</p>
+</section>
+
+<footer>Paper simulation. No funds, no wallet, no transactions. Every number rebuilt from the chain.</footer>
+</div>
+
+<script>
+const EXPLORER="https://robinhoodchain.blockscout.com";
+
+/* ---------- number formatting: never scientific notation ---------- */
+function money(n,dp){
+  if(n===null||n===undefined||!isFinite(n))return "—";
+  const s=n<0?"-":"";
+  return s+"$"+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:dp??2,maximumFractionDigits:dp??2});
+}
+function price(n){
+  if(n===null||n===undefined||!isFinite(n)||n===0)return "—";
+  const a=Math.abs(n);
+  if(a>=1000)return money(n,2);
+  if(a>=1)return money(n,4);
+  // small prices: keep 4 significant digits, written out in full — never 5.38e-05
+  const lead=Math.ceil(-Math.log10(a));
+  const dp=Math.min(lead+3,18);
+  return (n<0?"-":"")+"$"+Math.abs(n).toFixed(dp);
+}
+function qty(n){
+  if(n===null||n===undefined||!isFinite(n))return "—";
+  const a=Math.abs(n);
+  if(a>=1e9)return (n/1e9).toFixed(2)+"B";
+  if(a>=1e6)return (n/1e6).toFixed(2)+"M";
+  if(a>=1e3)return (n/1e3).toFixed(2)+"K";
+  if(a>=1)return n.toFixed(2);
+  return n.toFixed(4);
+}
+function pct(n,dp){
+  if(n===null||n===undefined||!isFinite(n))return "—";
+  return n.toFixed(dp??2)+"%";
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function shortHash(h){return h?esc(h.slice(0,8)+"…"+h.slice(-4)):"—";}
+function txLink(h){return h?`<a class="ext" target="_blank" rel="noopener noreferrer" href="${EXPLORER}/tx/${esc(h)}">${shortHash(h)}</a>`:"—";}
+function walLink(a){return a?`<a class="ext" target="_blank" rel="noopener noreferrer" href="${EXPLORER}/address/${esc(a)}">${shortHash(a)}</a>`:"—";}
+function cls(n){return n>0?"up":(n<0?"down":"flat");}
+function when(ts){if(!ts)return "—";const d=new Date(ts);return isNaN(d)?"—":d.toISOString().slice(5,16).replace("T"," ");}
+
+let DATA=null, FILTER="all";
+
+function kpi(k,v,h,c){return `<div class="kpi"><div class="k">${k}</div><div class="v ${c||''}">${v}</div><div class="h">${h||""}</div></div>`;}
+
+function render(){
+  const d=DATA;
+  document.getElementById("gen").textContent=when(d.generated);
+  document.getElementById("ntr").textContent=d.trades_total;
+  document.getElementById("modeline").textContent=d.gate_applied?"safety check ON":"copying every buy, no filter";
+
+  const tot=d.total_pnl_if_closed_now;
+  const el=document.getElementById("hl-pnl");
+  el.textContent=(tot>=0?"+":"")+money(tot).replace("-","");
+  el.className="big "+(tot>=0?"up":"down");
+  document.getElementById("hl-state").textContent=
+    `${d.closed_n} finished · ${d.open_n} still open · ${money(d.total_staked)} of pretend money put to work`;
+
+  document.getElementById("kpis").innerHTML=
+    kpi("If we closed now",(tot>=0?"+":"−")+money(Math.abs(tot)),pct(d.roi_if_closed_now)+" of money staked",cls(tot))+
+    kpi("Trades in profit",pct(d.win_rate_if_closed_now,1),`${d.trades_total} trades counted`,d.win_rate_if_closed_now>50?"up":"down")+
+    kpi("Finished trades",money(d.realised),`${d.closed_n} done · ${pct(d.win_rate,1)} made money`,cls(d.realised))+
+    kpi("Still open",(d.open_pnl_if_closed_now>=0?"+":"−")+money(Math.abs(d.open_pnl_if_closed_now)),
+        `${money(d.liquidation_value)} back from ${money(d.open_stake)}`,cls(d.open_pnl_if_closed_now))+
+    kpi("Blocked by safety check",d.rejected_n,"buys we would refuse","flat")+
+    kpi("Cannot price",d.unpriceable_n,"left out of the total","flat");
+
+  const n=d.trades_total;
+  document.getElementById("hl-note").innerHTML= n<20
+    ? `<span class="stamp warn">too early to trust</span> &nbsp;Only <b>${n}</b> trades so far. A run this
+       short can look good or bad purely by luck — the last engine we killed looked profitable at 10 bets
+       and was worthless by 41. Treat this as a scoreboard being filled in, not an answer.`
+    : `<b>${n}</b> trades counted. Still early, but the shape is starting to mean something.`;
+
+  // ---------- book ----------
+  const rows=[];
+  (d.open||[]).forEach(p=>rows.push({...p,_open:true,_pnl:p.upnl}));
+  (d.closed||[]).forEach(p=>rows.push({...p,_open:false,_pnl:p.realised}));
+  const show=rows.filter(p=>
+    FILTER==="all"||(FILTER==="open"&&p._open)||(FILTER==="closed"&&!p._open)||
+    (FILTER==="win"&&p._pnl>0)||(FILTER==="loss"&&p._pnl<0));
+  show.sort((a,b)=>Math.abs(b._pnl||0)-Math.abs(a._pnl||0));
+
+  document.getElementById("bk-state").textContent=
+    `showing ${show.length} of ${rows.length} positions · every hash below opens in the explorer`;
+
+  document.querySelector("#book tbody").innerHTML = show.length? show.map(p=>{
+    const buys=(p.fills||[]).map(f=>txLink(f.tx)).join(" ")||"—";
+    const sells=(p.exits||[]).map(f=>txLink(f.tx)).join(" ")||"—";
+    const worth=p._open?p.liquidation:(p.stake+(p.realised||0));
+    return `<tr>
+      <td class="sym">${esc(p.sym)}</td>
+      <td>${p._open?'<span class="stamp good">open</span>':'<span class="stamp">closed</span>'}</td>
+      <td class="r num">${money(p.stake)}</td>
+      <td class="r num">${price(p.entry)}</td>
+      <td class="r num">${price(p._open?p.mark:p.exit_price)}</td>
+      <td class="r num">${money(worth)}</td>
+      <td class="r num ${cls(p._pnl)}">${(p._pnl>=0?"+":"−")+money(Math.abs(p._pnl||0))}</td>
+      <td class="r num">${pct(p.their_push_pct,2)}</td>
+      <td class="r num">${pct((p.fee||0)*100,2)}</td>
+      <td>${walLink(p.wallet)}</td>
+      <td>${buys}</td>
+      <td>${sells}</td>
+    </tr>`;}).join("")
+    : `<tr><td colspan="12" style="color:var(--muted)">nothing matches that filter</td></tr>`;
+
+  // ---------- rejected ----------
+  const rj=d.rejected||[];
+  document.getElementById("rj-state").textContent= d.gate_applied
+    ? `${d.rejected_n} buys blocked and excluded from the headline above`
+    : `${d.rejected_n} buys WOULD be blocked — the headline above still includes them`;
+  document.querySelector("#rej tbody").innerHTML= rj.length? rj.map(r=>`<tr>
+      <td class="sym">${esc(r.sym)}</td>
+      <td class="r num">${money(r.usd)}</td>
+      <td class="reasons">${(r.why||[]).map(esc).join(" · ")}</td>
+      <td>${walLink(r.wallet)}</td><td>${txLink(r.tx)}</td></tr>`).join("")
+    : `<tr><td colspan="5" style="color:var(--muted)">none flagged</td></tr>`;
+
+  // ---------- unpriceable ----------
+  const un=d.unpriceable||[];
+  document.getElementById("un-state").textContent=`${d.unpriceable_n} buys left out because we cannot measure their true cost`;
+  document.querySelector("#unp tbody").innerHTML= un.length? un.map(r=>`<tr>
+      <td class="sym">${esc(r.sym)}</td>
+      <td class="r num">${money(r.usd)}</td>
+      <td class="reasons">${esc(r.why)}</td>
+      <td>${walLink(r.wallet)}</td><td>${txLink(r.tx)}</td></tr>`).join("")
+    : `<tr><td colspan="5" style="color:var(--muted)">none</td></tr>`;
+}
+
+document.querySelectorAll(".chip").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".chip").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); FILTER=b.dataset.f; render();
+}));
+
+fetch("sim_honest.json?t="+Date.now()).then(r=>r.json()).then(j=>{DATA=j;render();})
+  .catch(e=>{document.getElementById("hl-state").innerHTML=
+    '<span class="err">could not load sim_honest.json — '+esc(e.message)+'</span>';});
+setInterval(()=>fetch("sim_honest.json?t="+Date.now()).then(r=>r.json()).then(j=>{DATA=j;render();}).catch(()=>{}),60000);
+</script>
+</body>
+</html>
