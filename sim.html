@@ -247,7 +247,8 @@ function render(){
 
   const tot=d.total_pnl_if_closed_now;
   const el=document.getElementById("hl-pnl");
-  el.textContent=(tot>=0?"+":"")+money(tot).replace("-","");
+  // sign must be explicit — stripping the "-" once made a $575 LOSS read as a gain
+  el.textContent=(tot>=0?"+":"−")+money(Math.abs(tot));
   el.className="big "+(tot>=0?"up":"down");
   document.getElementById("hl-state").textContent=
     `${d.closed_n} finished · ${d.open_n} still open · ${money(d.total_staked)} of pretend money put to work`;
