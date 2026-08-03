@@ -259,8 +259,8 @@ function render(){
     kpi("Finished trades",money(d.realised),`${d.closed_n} done · ${pct(d.win_rate,1)} made money`,cls(d.realised))+
     kpi("Still open",(d.open_pnl_if_closed_now>=0?"+":"−")+money(Math.abs(d.open_pnl_if_closed_now)),
         `${money(d.liquidation_value)} back from ${money(d.open_stake)}`,cls(d.open_pnl_if_closed_now))+
-    kpi("Blocked by safety check",d.rejected_n,"buys we would refuse","flat")+
-    kpi("Cannot price",d.unpriceable_n,"left out of the total","flat");
+    kpi("Left out",d.rejected_n+d.unpriceable_n,
+        `${d.rejected_n} unsafe · ${d.unpriceable_n} not priceable`,"flat");
 
   const n=d.trades_total;
   document.getElementById("hl-note").innerHTML= n<20
