@@ -95,6 +95,13 @@ thead button:hover{color:var(--ink);background:#2B251D}
 thead button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 thead th.r button{justify-content:flex-end}
 .sortmark{color:var(--gold);font-size:9px;width:7px}
+.tick{font-size:8px;margin-left:4px;vertical-align:middle}
+.tick.up{color:var(--gain)} .tick.dn{color:var(--loss)}
+td.px-up{animation:cu 1.6s ease-out} td.px-dn{animation:cd 1.6s ease-out}
+@keyframes cu{0%{background:rgba(127,184,139,.42)}100%{}}
+@keyframes cd{0%{background:rgba(217,106,85,.42)}100%{}}
+.age{color:var(--faint);font-size:11px;font-family:var(--mono)}
+@media(prefers-reduced-motion:reduce){td.px-up,td.px-dn{animation:none}}
 tbody td{padding:5px 9px;border-bottom:1px solid #332D24;white-space:nowrap;vertical-align:top}
 tbody tr:nth-child(odd) td{background:var(--row)}
 tbody tr:nth-child(even) td{background:var(--rowalt)}
@@ -139,6 +146,7 @@ footer{max-width:1780px;margin:0 auto;padding:0 14px 40px;color:var(--faint);fon
   <span class="stat"><span class="lb">Positions</span><span class="vl num" id="s-n">—</span></span>
   <span class="stat"><span class="lb">Up</span><span class="vl num" id="s-hit">—</span></span>
   <span class="stat"><span class="lb">Median</span><span class="vl num" id="s-med">—</span></span>
+  <span class="stat"><span class="lb">Block</span><span class="vl num" id="s-blk">—</span></span>
   <span class="stat"><span class="lb">Live</span><span class="vl num" id="s-upd">—</span></span>
   <nav class="stripnav">
     <a href="./">Radar</a><a class="on" href="./sim.html">Blotter</a><a href="./wallets.html">Wallets</a>
@@ -165,6 +173,7 @@ footer{max-width:1780px;margin:0 auto;padding:0 14px 40px;color:var(--faint);fon
 
 <script>
 const EXPLORER="https://robinhoodchain.blockscout.com";
+const RPC="https://rpc.mainnet.chain.robinhood.com";   // CORS is open; browser reads it directly
 const GMGN="https://gmgn.ai/robinhood/token/";
 
 function money(n,dp){ if(n==null||!isFinite(n))return "—";
@@ -193,7 +202,14 @@ const COLS=[
   {k:"state", t:"State",   cell:r=>`<span class="tag ${r.state}">${r.state}</span>`},
   {k:"size",  t:"Bet",     r:1, cell:r=>r.size==null?"—":`<span class="num">${money(r.size,0)}</span>`},
   {k:"entry", t:"Entry",   r:1, cell:r=>`<span class="num">${price(r.entry)}</span>`},
-  {k:"mark",  t:"Now",     r:1, cell:r=>`<span class="num">${price(r.mark)}</span>`},
+  {k:"mark",  t:"Now",     r:1, cell:r=>{
+      const d=PRICE_DELTA[r.token];
+      const arrow=d==null||Math.abs(d)<1e-12?"":(d>0?`<span class="tick up">▲</span>`:`<span class="tick dn">▼</span>`);
+      return `<span class="num">${price(r.mark)}</span>${arrow}`;}},
+  {k:"chg",   t:"Move",    r:1, cell:r=>{
+      const d=PRICE_DELTA[r.token];
+      return d==null?'<span class="num flat">—</span>'
+        :`<span class="num ${cls(d)}">${(d>=0?"+":"")+ (d*100).toFixed(2)}%</span>`;}},
   {k:"value", t:"Value",   r:1, cell:r=>r.value==null?"—":`<span class="num">${money(r.value)}</span>`},
   {k:"pnl",   t:"P&L",     r:1, cell:r=>r.pnl==null?"—":`<span class="num ${cls(r.pnl)}">${signed(r.pnl)}</span>`},
   {k:"pnlpct",t:"P&L %",   r:1, cell:r=>r.pnlpct==null?"—":`<span class="num ${cls(r.pnlpct)}">${pct(r.pnlpct,1)}</span>`},
@@ -207,6 +223,9 @@ const COLS=[
 ];
 
 let DATA=null, TAB="all", SORT={k:"time",dir:-1}, Q="", OPENDET=new Set();
+let LAST_PX={};           // token -> last price we rendered
+let PRICE_DELTA={};       // token -> fractional change since the previous poll
+let LAST_POLL=0, HEAD=null, LAST_HEAD_AT=0;
 
 function rowsFrom(d){
   const out=[];
@@ -324,7 +343,7 @@ function render(){
   set("s-n",String(d.trades_total),"",d.trades_total);
   set("s-hit",pct(d.win_rate_if_closed_now,1),d.win_rate_if_closed_now>50?"gain":"loss");
   set("s-med",signed(d.outlier&&d.outlier.median_trade),cls(d.outlier&&d.outlier.median_trade));
-  document.getElementById("s-upd").innerHTML='<span class="dot"></span>'+ts(d.generated);
+
 
   const ol=d.outlier||{}, s1=ol.strip&&ol.strip[0]?ol.strip[0].pnl:null;
   document.getElementById("flag").innerHTML = (ol.best_sym==null||s1==null)?"":
@@ -342,6 +361,14 @@ function render(){
     <div class="dl">${esc(x.day.slice(5))}${i===dd.length-1?" · today":""}</div>
     <div class="dv ${cls(x.pnl)}">${signed(x.pnl,0)}</div>
     <div class="dm">${x.wins}/${x.n} up · ${pct(x.roi_pct,1)}</div></div>`).join("");
+
+  // price movement is MEASURED against the previous poll, never simulated
+  PRICE_DELTA={};
+  (d.open||[]).forEach(p=>{
+    const prev=LAST_PX[p.token];
+    if(prev&&p.mark&&Math.abs(p.mark-prev)>1e-15) PRICE_DELTA[p.token]=(p.mark-prev)/prev;
+    if(p.mark) LAST_PX[p.token]=p.mark;
+  });
 
   const all=rowsFrom(d);
   const SEEN=window.__seen||(window.__seen=new Set());
@@ -361,6 +388,15 @@ function render(){
           (OPENDET.has(id)?detail(r):"");
       }).join("")
     : `<tr><td colspan="${COLS.length}"><div class="empty">nothing matches — clear the filter or pick another tab</div></td></tr>`;
+  // paint the price cells that changed since the last poll
+  document.querySelectorAll("tr.open-row").forEach(tr=>{
+    const id=tr.dataset.id||""; const tokm=id.split("|")[2];
+    const d2=PRICE_DELTA[tokm];
+    if(d2!=null&&Math.abs(d2)>1e-12){
+      const cell=tr.children[5];   // the "Now" column
+      if(cell){cell.classList.add(d2>0?"px-up":"px-dn");}
+    }
+  });
   document.querySelectorAll("tr.open-row").forEach(tr=>tr.onclick=e=>{
     if(e.target.closest("a"))return;
     const id=tr.dataset.id;
@@ -376,16 +412,47 @@ function render(){
 
 document.getElementById("q").addEventListener("input",e=>{Q=e.target.value.trim();render();});
 
+// The chain's own block height, straight from the node. It advances ~10x a second, so it is the
+// one number on this page that can never look frozen — and it cannot be wrong, because we are not
+// deriving anything from it. Prices still come only from measured trades.
+async function pollBlock(){
+  try{
+    const r=await fetch(RPC,{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({jsonrpc:"2.0",method:"eth_blockNumber",params:[],id:1})});
+    const j=await r.json();
+    const h=parseInt(j.result,16);
+    if(Number.isFinite(h)){ HEAD=h; LAST_HEAD_AT=Date.now(); }
+  }catch(e){ /* the strip just stops advancing, which is the honest signal */ }
+}
+setInterval(pollBlock,2000); pollBlock();
+
+// one ticking clock drives every "live" element, so nothing on screen is ever stale-looking
+setInterval(()=>{
+  const b=document.getElementById("s-blk");
+  if(b){
+    const stale=Date.now()-LAST_HEAD_AT>8000;
+    b.textContent = HEAD==null?"—":HEAD.toLocaleString();
+    b.className="vl num "+(stale?"loss":"gain");
+  }
+  const u=document.getElementById("s-upd");
+  if(u&&DATA){
+    const secs=Math.max(0,Math.round((Date.now()-LAST_POLL)/1000));
+    u.innerHTML='<span class="dot"></span>'+ts(DATA.generated)+
+      `<span class="age"> · ${secs}s</span>`;
+  }
+},1000);
+
 async function load(){
   try{
     DATA=await (await fetch("sim_honest.json?t="+Date.now(),{cache:"no-store"})).json();
+    LAST_POLL=Date.now();
     render();
   }catch(e){
     document.getElementById("rows").innerHTML=
       `<tr><td colspan="${COLS.length}"><div class="empty">could not load sim_honest.json — ${esc(e.message)}</div></td></tr>`;
   }
 }
-load(); setInterval(load,60000);
+load(); setInterval(load,15000);   // 15s: the engine republishes every ~90s, so this is never stale
 </script>
 </body>
 </html>
