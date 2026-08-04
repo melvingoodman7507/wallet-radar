@@ -33,7 +33,20 @@ header.strip{position:sticky;top:0;z-index:30;background:var(--panel);
 .mark b{color:var(--ink);font-weight:600}
 .stat{display:flex;gap:6px;align-items:baseline;white-space:nowrap}
 .stat .lb{font:500 9.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.stat .vl{font-family:var(--mono);font-size:14px;font-weight:600}
+.stat .vl{font-family:var(--mono);font-size:14px;font-weight:600;transition:background-color .15s}
+.stat .vl.up-flash{animation:fu 1.1s ease-out}
+.stat .vl.dn-flash{animation:fd 1.1s ease-out}
+@keyframes fu{0%{background:rgba(127,184,139,.55);box-shadow:0 0 0 4px rgba(127,184,139,.55)}
+  100%{background:transparent;box-shadow:none}}
+@keyframes fd{0%{background:rgba(217,106,85,.55);box-shadow:0 0 0 4px rgba(217,106,85,.55)}
+  100%{background:transparent;box-shadow:none}}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gain);
+  margin-right:5px;vertical-align:middle;animation:bp 2s ease-in-out infinite}
+@keyframes bp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+tbody tr.fresh td{animation:rowin 1.4s ease-out}
+@keyframes rowin{0%{background:rgba(201,163,86,.30)}100%{}}
+@media(prefers-reduced-motion:reduce){
+  .stat .vl.up-flash,.stat .vl.dn-flash,.dot,tbody tr.fresh td{animation:none}}
 .stripnav{margin-left:auto;display:flex;gap:3px}
 .stripnav a{font:600 10px/1 var(--ui);letter-spacing:.11em;text-transform:uppercase;color:var(--muted);
   text-decoration:none;padding:6px 9px;border:1px solid transparent;border-radius:2px}
@@ -96,6 +109,7 @@ a.ext:hover{color:var(--ink)}
 .tag{display:inline-block;font:600 9px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;
   padding:2px 6px;border:1px solid currentColor;border-radius:2px}
 .tag.open{color:var(--gold)} .tag.closed{color:var(--muted)}
+.tag.nocash,.tag.atlimit{color:var(--gold)}
 .tag.thin{color:var(--loss)} .tag.unsafe{color:var(--loss)} .tag.unpriced{color:var(--faint)}
 .why{color:var(--gold);font-size:11px;white-space:normal;max-width:38ch;display:inline-block}
 .det td{background:#211D17 !important;padding:10px 14px;white-space:normal}
@@ -116,13 +130,16 @@ footer{max-width:1780px;margin:0 auto;padding:0 14px 40px;color:var(--faint);fon
 
 <header class="strip"><div class="stripin">
   <span class="mark">Blotter<b> · copy-trade sim</b></span>
+  <span class="stat"><span class="lb">Fund</span><span class="vl num" id="s-fund">—</span></span>
+  <span class="stat"><span class="lb">Equity</span><span class="vl num" id="s-eq">—</span></span>
   <span class="stat"><span class="lb">Net</span><span class="vl num" id="s-net">—</span></span>
-  <span class="stat"><span class="lb">Return</span><span class="vl num" id="s-roi">—</span></span>
+  <span class="stat"><span class="lb">On fund</span><span class="vl num" id="s-roi">—</span></span>
+  <span class="stat"><span class="lb">In trades</span><span class="vl num" id="s-dep">—</span></span>
+  <span class="stat"><span class="lb">Free cash</span><span class="vl num" id="s-cash">—</span></span>
   <span class="stat"><span class="lb">Positions</span><span class="vl num" id="s-n">—</span></span>
   <span class="stat"><span class="lb">Up</span><span class="vl num" id="s-hit">—</span></span>
-  <span class="stat"><span class="lb">Deployed</span><span class="vl num" id="s-stake">—</span></span>
   <span class="stat"><span class="lb">Median</span><span class="vl num" id="s-med">—</span></span>
-  <span class="stat"><span class="lb">Updated</span><span class="vl num" id="s-upd">—</span></span>
+  <span class="stat"><span class="lb">Live</span><span class="vl num" id="s-upd">—</span></span>
   <nav class="stripnav">
     <a href="./">Radar</a><a class="on" href="./sim.html">Blotter</a><a href="./wallets.html">Wallets</a>
   </nav>
@@ -203,6 +220,12 @@ function rowsFrom(d){
     pnlpct:p.stake?100*p.realised/p.stake:null,toll:(p.their_push_pct||0)+(p.our_push_pct||0),
     fee:p.fee,depth:p.depth,buys:p.buys,sells:p.sells,closed:p.closed_ts,wallet:p.wallet,
     tx:p.open_tx,fills:p.fills,exits:p.exits,raw:p}));
+  (d.no_cash||[]).forEach(r=>out.push({kind:"nocash",state:"no cash",time:r.ts,sym:r.sym,token:r.token,
+    size:null,entry:null,mark:null,value:null,pnl:null,pnlpct:null,toll:null,fee:null,depth:r.depth,
+    buys:null,sells:null,closed:null,wallet:r.wallet,tx:r.tx,why:r.why,raw:r}));
+  (d.over_limit||[]).forEach(r=>out.push({kind:"atlimit",state:"at limit",time:r.ts,sym:r.sym,token:r.token,
+    size:null,entry:null,mark:null,value:null,pnl:null,pnlpct:null,toll:null,fee:null,depth:r.depth,
+    buys:null,sells:null,closed:null,wallet:r.wallet,tx:r.tx,why:r.why,raw:r}));
   (d.thin||[]).forEach(r=>out.push({kind:"thin",state:"thin",time:r.ts,sym:r.sym,token:r.token,
     size:null,entry:null,mark:null,value:null,pnl:null,pnlpct:null,toll:null,fee:null,depth:r.depth,
     buys:null,sells:null,closed:null,wallet:r.wallet,tx:r.tx,why:r.why,raw:r}));
@@ -221,7 +244,7 @@ const TABS=[
   {k:"closed",  t:"Closed",    f:r=>r.kind==="closed"},
   {k:"win",     t:"Winners",   f:r=>r.pnl>0},
   {k:"lose",    t:"Losers",    f:r=>r.pnl<0},
-  {k:"skipped", t:"Not taken", f:r=>["thin","unsafe","unpriced"].includes(r.kind)},
+  {k:"skipped", t:"Not taken", f:r=>["thin","unsafe","unpriced","nocash","atlimit"].includes(r.kind)},
 ];
 
 function visible(all){
@@ -280,15 +303,28 @@ function detail(r){
 
 function render(){
   const d=DATA; if(!d)return;
-  const set=(id,html,c)=>{const e=document.getElementById(id);e.innerHTML=html;e.className="vl num "+(c||"");};
+  const PREV=window.__prev||(window.__prev={});
+  const set=(id,html,c,num)=>{
+    const e=document.getElementById(id);
+    const had=PREV[id];
+    e.innerHTML=html; e.className="vl num "+(c||"");
+    if(num!=null&&had!=null&&Math.abs(num-had)>1e-9){
+      e.classList.remove("up-flash","dn-flash"); void e.offsetWidth;   // restart the animation
+      e.classList.add(num>had?"up-flash":"dn-flash");
+    }
+    if(num!=null)PREV[id]=num;
+  };
   const tot=d.total_pnl_if_closed_now;
-  set("s-net",signed(tot),cls(tot));
-  set("s-roi",pct(d.roi_if_closed_now),cls(d.roi_if_closed_now));
-  set("s-n",String(d.trades_total));
+  set("s-fund",money(d.bankroll,0),"",d.bankroll);
+  set("s-eq",money(d.equity,0),cls(d.equity-d.bankroll),d.equity);
+  set("s-net",signed(tot),cls(tot),tot);
+  set("s-roi",pct(d.return_on_bankroll_pct),cls(d.return_on_bankroll_pct),d.return_on_bankroll_pct);
+  set("s-dep",money(d.deployed,0),"",d.deployed);
+  set("s-cash",money(d.free_cash,0),d.free_cash<0?"loss":"",d.free_cash);
+  set("s-n",String(d.trades_total),"",d.trades_total);
   set("s-hit",pct(d.win_rate_if_closed_now,1),d.win_rate_if_closed_now>50?"gain":"loss");
-  set("s-stake",money(d.total_staked,0));
   set("s-med",signed(d.outlier&&d.outlier.median_trade),cls(d.outlier&&d.outlier.median_trade));
-  set("s-upd",ts(d.generated));
+  document.getElementById("s-upd").innerHTML='<span class="dot"></span>'+ts(d.generated);
 
   const ol=d.outlier||{}, s1=ol.strip&&ol.strip[0]?ol.strip[0].pnl:null;
   document.getElementById("flag").innerHTML = (ol.best_sym==null||s1==null)?"":
@@ -308,6 +344,8 @@ function render(){
     <div class="dm">${x.wins}/${x.n} up · ${pct(x.roi_pct,1)}</div></div>`).join("");
 
   const all=rowsFrom(d);
+  const SEEN=window.__seen||(window.__seen=new Set());
+  const firstPaint=SEEN.size===0;
   document.getElementById("tabs").innerHTML=TABS.map(t=>
     `<button type="button" class="tab${t.k===TAB?" on":""}" data-t="${t.k}">${t.t}<span class="c">${all.filter(t.f).length}</span></button>`).join("");
   document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;render();});
@@ -317,7 +355,8 @@ function render(){
   document.getElementById("rows").innerHTML = rs.length
     ? rs.map(r=>{
         const id=`${r.kind}|${r.wallet}|${r.token}|${r.time}`;
-        return `<tr class="open-row" data-id="${esc(id)}">`+
+        const isNew=!firstPaint&&!SEEN.has(id); SEEN.add(id);
+        return `<tr class="open-row${isNew?" fresh":""}" data-id="${esc(id)}">`+
           COLS.map(c=>`<td${c.r?' class="r"':''}>${c.cell(r)}</td>`).join("")+`</tr>`+
           (OPENDET.has(id)?detail(r):"");
       }).join("")
