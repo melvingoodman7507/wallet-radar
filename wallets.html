@@ -188,18 +188,26 @@ function render(){
 }
 
 async function load(){
-  const [wl,fd]=await Promise.all([
+  const [wch,wl,fd]=await Promise.all([
+    fetch("watchlist.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).catch(()=>null),
     fetch("wallets.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).catch(()=>null),
     fetch("feed.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).catch(()=>({events:[]})),
   ]);
-  if(!wl){document.getElementById("rows").innerHTML=
-    `<tr><td colspan="${COLS.length}"><div class="empty">could not load wallets.json</div></td></tr>`;return;}
 
-  const meta=wl.clean_meta||{};
+  // watchlist.json is the richer source (tiers + win rates). wallets.json is a flat
+  // [{a,tier}] list and is the fallback so this page still works if only that ships.
   const list=[];
-  (wl.core_28||[]).forEach(a=>list.push({addr:a.toLowerCase(),tier:"core"}));
-  (wl.clean_top||[]).forEach(a=>list.push({addr:a.toLowerCase(),tier:"clean",
-    winrate:(meta[a]||{}).winrate, n_trades:(meta[a]||{}).n_trades}));
+  if(wch && wch.clean_top){
+    const meta=wch.clean_meta||{};
+    (wch.core_28||[]).forEach(a=>list.push({addr:a.toLowerCase(),tier:"core"}));
+    (wch.clean_top||[]).forEach(a=>list.push({addr:a.toLowerCase(),tier:"clean",
+      winrate:(meta[a]||{}).winrate, n_trades:(meta[a]||{}).n_trades}));
+  } else if(Array.isArray(wl)){
+    wl.forEach(w=>list.push({addr:String(w.a||w.addr||"").toLowerCase(),
+      tier:w.tier==="clean"?"clean":"core", winrate:w.winrate, n_trades:w.n_trades}));
+  }
+  if(!list.length){document.getElementById("rows").innerHTML=
+    `<tr><td colspan="${COLS.length}"><div class="empty">could not load the wallet list</div></td></tr>`;return;}
 
   const by={};
   (fd.events||[]).forEach(e=>{
