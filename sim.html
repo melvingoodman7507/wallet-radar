@@ -79,6 +79,9 @@ th{font:700 10px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;c
 tbody tr:hover{background:#332D24}
 td.r,th.r{text-align:right}
 .sym{font-weight:700}
+a.coin{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(201,163,86,.55)}
+a.coin:hover{color:var(--gold);border-bottom-color:var(--gold)}
+a.coin::after{content:"\2197";font-size:9px;vertical-align:super;margin-left:2px;color:var(--gold);opacity:.8}
 a.ext{color:var(--gold);text-decoration:none;border-bottom:1px dotted rgba(201,163,86,.5);font-family:var(--mono);font-size:12px}
 a.ext:hover{color:var(--ink);border-bottom-color:var(--ink)}
 a.ext::after{content:"↗";font-size:9px;vertical-align:super;margin-left:2px;opacity:.7}
@@ -254,6 +257,12 @@ function pct(n,dp){
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function shortHash(h){return h?esc(h.slice(0,8)+"…"+h.slice(-4)):"—";}
 function txLink(h){return h?`<a class="ext" target="_blank" rel="noopener noreferrer" href="${EXPLORER}/tx/${esc(h)}">${shortHash(h)}</a>`:"—";}
+function coinLink(sym,token){
+  const t=esc(sym||"?");
+  if(!token) return `<span class="sym">${t}</span>`;
+  return `<a class="coin" target="_blank" rel="noopener noreferrer"
+    href="https://gmgn.ai/robinhood/token/${esc(token)}" title="Open ${t} chart and buy page">${t}</a>`;
+}
 function walLink(a){return a?`<a class="ext" target="_blank" rel="noopener noreferrer" href="${EXPLORER}/address/${esc(a)}">${shortHash(a)}</a>`:"—";}
 function cls(n){return n>0?"up":(n<0?"down":"flat");}
 function when(ts){if(!ts)return "—";const d=new Date(ts);return isNaN(d)?"—":d.toISOString().slice(5,16).replace("T"," ");}
@@ -338,7 +347,7 @@ function render(){
     const sells=(p.exits||[]).map(f=>txLink(f.tx)).join(" ")||"—";
     const worth=p._open?p.liquidation:(p.stake+(p.realised||0));
     return `<tr>
-      <td class="sym">${esc(p.sym)}</td>
+      <td>${coinLink(p.sym,p.token)}</td>
       <td>${p._open?'<span class="stamp good">open</span>':'<span class="stamp">closed</span>'}</td>
       <td class="r num">${money(p.stake)}</td>
       <td class="r num">${price(p.entry)}</td>
@@ -361,7 +370,7 @@ function render(){
     ? `${d.rejected_n} buys blocked and excluded from the headline above`
     : `${d.rejected_n} buys WOULD be blocked — the headline above still includes them`;
   document.querySelector("#rej tbody").innerHTML= rj.length? rj.map(r=>`<tr>
-      <td class="sym">${esc(r.sym)}</td>
+      <td>${coinLink(r.sym,r.token)}</td>
       <td class="num" style="font-size:12px">${when(r.ts)}</td>
       <td class="r num">${money(r.usd)}</td>
       <td class="reasons">${(r.why||[]).map(esc).join(" · ")}</td>
@@ -372,7 +381,7 @@ function render(){
   const th=d.thin||[];
   document.getElementById("th-state").textContent=`${d.thin_n||0} buys skipped because the pool is too small for us`;
   document.querySelector("#thin tbody").innerHTML= th.length? th.map(r=>`<tr>
-      <td class="sym">${esc(r.sym)}<sup class="why" title="${esc(r.why)}">why?</sup></td>
+      <td>${coinLink(r.sym,r.token)}<sup class="why" title="${esc(r.why)}">why?</sup></td>
       <td class="num" style="font-size:12px">${when(r.ts)}</td>
       <td class="r num">${money(r.usd)}</td>
       <td class="r num">${money(r.depth,0)}</td>
@@ -384,7 +393,7 @@ function render(){
   const un=d.unpriceable||[];
   document.getElementById("un-state").textContent=`${d.unpriceable_n} buys left out because we cannot measure their true cost`;
   document.querySelector("#unp tbody").innerHTML= un.length? un.map(r=>`<tr>
-      <td class="sym">${esc(r.sym)}</td>
+      <td>${coinLink(r.sym,r.token)}</td>
       <td class="num" style="font-size:12px">${when(r.ts)}</td>
       <td class="r num">${money(r.usd)}</td>
       <td class="reasons">${esc(r.why)}</td>
