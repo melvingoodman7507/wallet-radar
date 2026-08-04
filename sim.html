@@ -137,8 +137,10 @@ footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
   <div class="folio-head"><span class="eyebrow">Plain English</span><h2>What you are looking at</h2></div>
   <div class="stateline">no real money has been spent — this is a scorecard, not a wallet</div>
   <p class="note">We watch 58 crypto wallets. 30 of them have a good track record. Every time one of
-  those 30 <b>buys</b> a coin, we pretend to buy $100 of the same coin at the same moment, and we
-  write it down. When that wallet sells out, we pretend to sell too. Nothing is bought. Nothing is
+  those 30 <b>buys</b> a coin, we pretend to buy the same coin at the same moment, and we write it
+  down. <b>How much we bet depends on the size of the pool</b> — a big, deep coin gets up to $2,000,
+  a small one gets as little as $50, and if the pool is too small to take even $50 without moving the
+  price against us, we do not trade it at all. When that wallet sells out, we pretend to sell too. Nothing is bought. Nothing is
   risked. The point is to find out — <b>before</b> any real money is involved — whether following
   these people would actually have made money.</p>
   <div class="legend">
@@ -280,8 +282,8 @@ function render(){
     kpi("Finished trades",money(d.realised),`${d.closed_n} done · ${pct(d.win_rate,1)} made money`,cls(d.realised))+
     kpi("Still open",(d.open_pnl_if_closed_now>=0?"+":"−")+money(Math.abs(d.open_pnl_if_closed_now)),
         `${money(d.liquidation_value)} back from ${money(d.open_stake)}`,cls(d.open_pnl_if_closed_now))+
-    kpi("Left out",d.rejected_n+d.unpriceable_n,
-        `${d.rejected_n} unsafe · ${d.unpriceable_n} not priceable`,"flat");
+    kpi("Left out",d.rejected_n+d.unpriceable_n+(d.thin_n||0),
+        `${d.rejected_n} unsafe · ${d.thin_n||0} too thin · ${d.unpriceable_n} not priceable`,"flat");
 
   const n=d.trades_total;
   document.getElementById("hl-note").innerHTML= n<20
