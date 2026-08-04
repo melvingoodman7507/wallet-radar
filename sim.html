@@ -26,11 +26,11 @@ html{-webkit-text-size-adjust:100%}
 body{background:var(--ground);background-image:linear-gradient(180deg,#2A251D 0,#26221B 340px);
   color:var(--ink);font:15px/1.55 var(--grot);min-height:100vh}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.wrap{max-width:1000px;margin:0 auto;padding:0 16px 72px}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px 72px}
 a{color:inherit}
 
 header.top{border-bottom:1px solid var(--rule2);background:#221E17}
-.topin{max-width:1000px;margin:0 auto;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:baseline}
+.topin{max-width:1440px;margin:0 auto;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:baseline}
 .brand{font-family:var(--disp);font-weight:640;font-size:19px}
 .brand small{font-family:var(--grot);font-weight:600;font-size:10px;letter-spacing:.22em;color:var(--muted);margin-left:8px;text-transform:uppercase}
 nav.main{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
@@ -92,6 +92,14 @@ a.ext::after{content:"↗";font-size:9px;vertical-align:super;margin-left:2px;op
 .legend div{border-left:2px solid var(--rule2);padding-left:11px}
 .legend .lt{font-weight:700;font-size:13px}
 .legend .ld{color:var(--muted);font-size:12.5px;margin-top:2px}
+.alert{border:2px solid var(--ox);border-radius:4px;background:rgba(217,106,85,.09);
+  padding:12px 15px;margin-top:14px}
+.alert .at{font:700 11px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ox)}
+.alert .ab{margin-top:6px;font-size:13.5px;color:var(--ink);max-width:88ch}
+.alert b{color:var(--ox)}
+sup.why{color:var(--gold);font-size:10px;cursor:help;margin-left:2px}
+.sizebar{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.sizebar b{color:var(--ink);font-family:var(--mono)}
 footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
 .err{color:var(--ox);font-family:var(--mono);font-size:13px}
 </style>
@@ -120,6 +128,8 @@ footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
       <div class="bigsub">if we sold every open position right now, at prices we could actually get</div></div>
   </div>
   <div class="kpis" id="kpis"></div>
+  <div id="outlier"></div>
+  <div class="sizebar" id="sizebar"></div>
   <p class="note" id="hl-note"></p>
 </section>
 
@@ -160,9 +170,9 @@ footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
   <div class="stateline" id="bk-state">—</div>
   <div class="scrollbox"><table id="book">
     <thead><tr>
-      <th>Coin</th><th>Status</th><th class="r">Staked</th><th class="r">Our buy price</th>
+      <th>Coin</th><th>Status</th><th class="r">Bet size</th><th class="r">Our buy price</th>
       <th class="r">Price now</th><th class="r">Worth now</th><th class="r">Profit / loss</th>
-      <th class="r">Their push</th><th class="r">Pool fee</th><th>Wallet</th><th>Bought</th><th>Sold</th>
+      <th class="r">Their push</th><th class="r">Pool fee</th><th>Opened</th><th>Closed</th><th>Wallet</th><th>Buy tx</th><th>Sell tx</th>
     </tr></thead><tbody></tbody>
   </table></div>
   <p class="note">Every wallet address and every transaction below opens in the block explorer in a
@@ -174,7 +184,7 @@ footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
   <div class="folio-head"><span class="eyebrow">Refused</span><h2>Coins the safety check would block</h2></div>
   <div class="stateline" id="rj-state">—</div>
   <div class="scrollbox"><table id="rej">
-    <thead><tr><th>Coin</th><th class="r">Their order</th><th>Why we would not touch it</th><th>Wallet</th><th>Transaction</th></tr></thead>
+    <thead><tr><th>Coin</th><th>When</th><th class="r">Their order</th><th>Why we would not touch it</th><th>Wallet</th><th>Transaction</th></tr></thead>
     <tbody></tbody></table></div>
   <p class="note">These are real buys by wallets we follow that a safety check flags — things like an
   owner who can freeze trading, change the tax, or a pool too thin to sell back into. The headline
@@ -182,11 +192,22 @@ footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
   <b>is being picky worth it?</b></p>
 </section>
 
+<section class="folio" id="sec-thin">
+  <div class="folio-head"><span class="eyebrow">Refused on size</span><h2>Pools too thin to trade</h2></div>
+  <div class="stateline" id="th-state">—</div>
+  <div class="scrollbox"><table id="thin">
+    <thead><tr><th>Coin</th><th>When</th><th class="r">Their order</th><th class="r">Money in the pool</th><th>Why we stayed out</th><th>Wallet</th><th>Transaction</th></tr></thead>
+    <tbody></tbody></table></div>
+  <p class="note">These coins are real buys by wallets we follow, but the pool behind them is so small
+  that our own order would move the price against us by more than half a percent before we even own
+  the coin — and we would pay it again getting out. <b>No trade is taken.</b></p>
+</section>
+
 <section class="folio" id="sec-unp">
   <div class="folio-head"><span class="eyebrow">Excluded, and said out loud</span><h2>Trades we cannot price honestly</h2></div>
   <div class="stateline" id="un-state">—</div>
   <div class="scrollbox"><table id="unp">
-    <thead><tr><th>Coin</th><th class="r">Their order</th><th>Reason</th><th>Wallet</th><th>Transaction</th></tr></thead>
+    <thead><tr><th>Coin</th><th>When</th><th class="r">Their order</th><th>Reason</th><th>Wallet</th><th>Transaction</th></tr></thead>
     <tbody></tbody></table></div>
   <p class="note">We could not measure the pool behind these coins, so we do not know what buying or
   selling them would really cost. Rather than guess a friendly number and quietly fold them into the
@@ -269,6 +290,33 @@ function render(){
        and was worthless by 41. Treat this as a scoreboard being filled in, not an answer.`
     : `<b>${n}</b> trades counted. Still early, but the shape is starting to mean something.`;
 
+  // ---------- outlier test: the arbforge lesson, shown not buried ----------
+  const ol=d.outlier||{};
+  const ob=document.getElementById("outlier");
+  if(ol.best_sym && ol.strip && ol.strip.length){
+    const s1=ol.strip[0].pnl;
+    ob.innerHTML = s1>0
+      ? `<div class="alert" style="border-color:var(--forest);background:rgba(127,184,139,.08)">
+           <div class="at" style="color:var(--forest)">outlier test — passed</div>
+           <div class="ab">Take away the single best trade (<b>${esc(ol.best_sym)}</b>, ${money(ol.best_pnl)})
+           and the book is still ${money(s1)}. The result is not resting on one lucky coin.</div></div>`
+      : `<div class="alert"><div class="at">outlier test — failed</div>
+           <div class="ab">One trade is doing all the work. <b>${esc(ol.best_sym)}</b> alone made
+           ${money(ol.best_pnl)} — that is <b>${ol.best_share_pct}%</b> of every dollar of profit here.
+           Take just that one trade away and the whole book turns into <b>${money(s1)}</b>.
+           The typical trade actually <b>loses ${money(Math.abs(ol.median_trade))}</b>.
+           <br><br>This is exactly how the last engine we killed looked before we killed it: profitable
+           on paper, but only because of a single winner that could just as easily have gone the other
+           way. <b>Do not read the green number at the top as an edge.</b></div></div>`;
+  } else ob.innerHTML="";
+
+  const sz=d.sizing||{};
+  document.getElementById("sizebar").innerHTML= sz.max_stake
+    ? `<span>Bet sizing: <b>${pct(sz.impact_budget_pct,1)}</b> of our own price impact allowed</span>
+       <span>smallest bet <b>${money(sz.min_stake,0)}</b></span>
+       <span>largest bet <b>${money(sz.max_stake,0)}</b></span>
+       <span>most money out at once <b>${money(d.open_stake)}</b></span>` : "";
+
   // ---------- book ----------
   const rows=[];
   (d.open||[]).forEach(p=>rows.push({...p,_open:true,_pnl:p.upnl}));
@@ -295,11 +343,13 @@ function render(){
       <td class="r num ${cls(p._pnl)}">${(p._pnl>=0?"+":"−")+money(Math.abs(p._pnl||0))}</td>
       <td class="r num">${pct(p.their_push_pct,2)}</td>
       <td class="r num">${pct((p.fee||0)*100,2)}</td>
+      <td class="num" style="font-size:12px">${when(p.opened)}</td>
+      <td class="num" style="font-size:12px">${p._open?"—":when(p.closed_ts)}</td>
       <td>${walLink(p.wallet)}</td>
       <td>${buys}</td>
       <td>${sells}</td>
     </tr>`;}).join("")
-    : `<tr><td colspan="12" style="color:var(--muted)">nothing matches that filter</td></tr>`;
+    : `<tr><td colspan="14" style="color:var(--muted)">nothing matches that filter</td></tr>`;
 
   // ---------- rejected ----------
   const rj=d.rejected||[];
@@ -308,20 +358,34 @@ function render(){
     : `${d.rejected_n} buys WOULD be blocked — the headline above still includes them`;
   document.querySelector("#rej tbody").innerHTML= rj.length? rj.map(r=>`<tr>
       <td class="sym">${esc(r.sym)}</td>
+      <td class="num" style="font-size:12px">${when(r.ts)}</td>
       <td class="r num">${money(r.usd)}</td>
       <td class="reasons">${(r.why||[]).map(esc).join(" · ")}</td>
       <td>${walLink(r.wallet)}</td><td>${txLink(r.tx)}</td></tr>`).join("")
-    : `<tr><td colspan="5" style="color:var(--muted)">none flagged</td></tr>`;
+    : `<tr><td colspan="6" style="color:var(--muted)">none flagged</td></tr>`;
+
+  // ---------- too thin ----------
+  const th=d.thin||[];
+  document.getElementById("th-state").textContent=`${d.thin_n||0} buys skipped because the pool is too small for us`;
+  document.querySelector("#thin tbody").innerHTML= th.length? th.map(r=>`<tr>
+      <td class="sym">${esc(r.sym)}<sup class="why" title="${esc(r.why)}">why?</sup></td>
+      <td class="num" style="font-size:12px">${when(r.ts)}</td>
+      <td class="r num">${money(r.usd)}</td>
+      <td class="r num">${money(r.depth,0)}</td>
+      <td class="reasons">${esc(r.why)}</td>
+      <td>${walLink(r.wallet)}</td><td>${txLink(r.tx)}</td></tr>`).join("")
+    : `<tr><td colspan="7" style="color:var(--muted)">none — every pool was big enough</td></tr>`;
 
   // ---------- unpriceable ----------
   const un=d.unpriceable||[];
   document.getElementById("un-state").textContent=`${d.unpriceable_n} buys left out because we cannot measure their true cost`;
   document.querySelector("#unp tbody").innerHTML= un.length? un.map(r=>`<tr>
       <td class="sym">${esc(r.sym)}</td>
+      <td class="num" style="font-size:12px">${when(r.ts)}</td>
       <td class="r num">${money(r.usd)}</td>
       <td class="reasons">${esc(r.why)}</td>
       <td>${walLink(r.wallet)}</td><td>${txLink(r.tx)}</td></tr>`).join("")
-    : `<tr><td colspan="5" style="color:var(--muted)">none</td></tr>`;
+    : `<tr><td colspan="6" style="color:var(--muted)">none</td></tr>`;
 }
 
 document.querySelectorAll(".chip").forEach(b=>b.addEventListener("click",()=>{
