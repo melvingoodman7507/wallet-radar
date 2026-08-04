@@ -304,7 +304,9 @@ function render(){
            and the book is still ${money(s1)}. The result is not resting on one lucky coin.</div></div>`
       : `<div class="alert"><div class="at">outlier test — failed</div>
            <div class="ab">One trade is doing all the work. <b>${esc(ol.best_sym)}</b> alone made
-           ${money(ol.best_pnl)} — that is <b>${ol.best_share_pct}%</b> of every dollar of profit here.
+           ${money(ol.best_pnl)}${ol.best_share_pct!=null
+             ? ` — that is <b>${ol.best_share_pct}%</b> of every dollar of profit here`
+             : `, and even counting that win the whole book is still <b>${money(ol.grand)}</b>`}.
            Take just that one trade away and the whole book turns into <b>${money(s1)}</b>.
            The typical trade actually <b>loses ${money(Math.abs(ol.median_trade))}</b>.
            <br><br>This is exactly how the last engine we killed looked before we killed it: profitable
