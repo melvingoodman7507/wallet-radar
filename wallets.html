@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Wallets — the 58 we watch</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>👛</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#221E17; --panel:#2A251D; --row:#2C2720; --rowalt:#2E2820;
+  --rule:#3E372B; --rule2:#4A4234;
+  --ink:#E9E2D2; --muted:#AFA48C; --faint:#8C8270;
+  --gain:#7FB88B; --loss:#D96A55; --gold:#C9A356;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --ui:'Archivo',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ground);color:var(--ink);font:13px/1.45 var(--ui);min-height:100vh}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.gain{color:var(--gain)} .loss{color:var(--loss)} .flat{color:var(--muted)}
+header.strip{position:sticky;top:0;z-index:30;background:var(--panel);
+  border-bottom:1px solid var(--rule2);box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.stripin{max-width:1780px;margin:0 auto;padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline}
+.mark{font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--gold);margin-right:6px}
+.mark b{color:var(--ink)}
+.stat{display:flex;gap:6px;align-items:baseline;white-space:nowrap}
+.stat .lb{font:500 9.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.stat .vl{font-family:var(--mono);font-size:14px;font-weight:600}
+.stripnav{margin-left:auto;display:flex;gap:3px}
+.stripnav a{font:600 10px/1 var(--ui);letter-spacing:.11em;text-transform:uppercase;color:var(--muted);
+  text-decoration:none;padding:6px 9px;border:1px solid transparent;border-radius:2px}
+.stripnav a:hover{color:var(--ink);border-color:var(--rule2)}
+.stripnav a.on{color:var(--ground);background:var(--ink)}
+.bar{max-width:1780px;margin:14px auto 0;padding:0 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tabs{display:flex;gap:2px}
+.tab{background:transparent;border:1px solid var(--rule2);color:var(--muted);border-radius:2px;
+  padding:5px 11px;cursor:pointer;font:600 10.5px/1.3 var(--ui);letter-spacing:.09em;text-transform:uppercase}
+.tab:hover{color:var(--ink);border-color:var(--muted)}
+.tab.on{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.tab .c{font-family:var(--mono);opacity:.65;margin-left:5px}
+input[type=search]{background:var(--panel);border:1px solid var(--rule2);color:var(--ink);
+  padding:6px 10px;border-radius:2px;font:400 12px var(--mono);min-width:200px}
+input[type=search]:focus{outline:2px solid var(--gold);outline-offset:-1px}
+.hint{color:var(--faint);font-size:11px;margin-left:auto;font-family:var(--mono)}
+.sheet{max-width:1780px;margin:10px auto 0;padding:0 14px 60px}
+.scroll{overflow-x:auto;border:1px solid var(--rule)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px;min-width:1100px}
+thead th{position:sticky;top:47px;z-index:20;background:#241F19;text-align:left;padding:0;
+  border-bottom:1px solid var(--rule2)}
+thead button{width:100%;background:none;border:0;color:var(--faint);cursor:pointer;text-align:inherit;
+  font:600 9.5px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:8px 9px;
+  display:flex;gap:4px;align-items:center}
+thead button:hover{color:var(--ink);background:#2B251D}
+thead button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+thead th.r button{justify-content:flex-end}
+.sortmark{color:var(--gold);font-size:9px;width:7px}
+tbody td{padding:6px 9px;border-bottom:1px solid #332D24;white-space:nowrap}
+tbody tr:nth-child(odd) td{background:var(--row)}
+tbody tr:nth-child(even) td{background:var(--rowalt)}
+tbody tr:hover td{background:#3A3227}
+td.r,th.r{text-align:right}
+a.ext{color:var(--gold);text-decoration:none;font-family:var(--mono);font-size:11.5px;
+  border-bottom:1px dotted rgba(201,163,86,.45)}
+a.ext:hover{color:var(--ink)}
+a.addr{color:var(--ink);font-family:var(--mono);font-size:11.5px;text-decoration:none;
+  border-bottom:1px solid rgba(201,163,86,.4)}
+a.addr:hover{color:var(--gold)}
+.tag{display:inline-block;font:600 9px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 6px;border:1px solid currentColor;border-radius:2px}
+.tag.clean{color:var(--gain)} .tag.core{color:var(--faint)}
+.bar2{height:5px;background:#3A3227;border-radius:1px;min-width:52px;display:inline-block;vertical-align:middle}
+.bar2 i{display:block;height:100%;background:var(--gold);border-radius:1px}
+.empty{padding:26px 14px;color:var(--faint);font-family:var(--mono);font-size:12px;background:var(--row)}
+footer{max-width:1780px;margin:0 auto;padding:0 14px 40px;color:var(--faint);font-size:11px;font-family:var(--mono)}
+.lead{max-width:1780px;margin:12px auto 0;padding:0 14px;color:var(--muted);font-size:12.5px;max-width:90ch}
+.lead b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="strip"><div class="stripin">
+  <span class="mark">Wallets<b> · the ones we follow</b></span>
+  <span class="stat"><span class="lb">Watched</span><span class="vl num" id="s-n">—</span></span>
+  <span class="stat"><span class="lb">Alerting</span><span class="vl num" id="s-clean">—</span></span>
+  <span class="stat"><span class="lb">Active 24h</span><span class="vl num" id="s-act">—</span></span>
+  <span class="stat"><span class="lb">Trades seen</span><span class="vl num" id="s-tr">—</span></span>
+  <nav class="stripnav">
+    <a href="./">Radar</a><a href="./sim.html">Blotter</a><a class="on" href="./wallets.html">Wallets</a>
+  </nav>
+</div></header>
+
+<p class="lead">Every wallet we watch. <b>Alerting</b> wallets passed the vetting filter — only their buys
+send you a message and open a paper position. <b>Quiet</b> wallets are tracked but never alert; they came
+from the original pack that turned out to be one coordinated group. Every address and transaction below
+opens in the block explorer in a new tab.</p>
+
+<div class="bar">
+  <div class="tabs" id="tabs"></div>
+  <input type="search" id="q" placeholder="filter address…" aria-label="Filter wallets">
+  <span class="hint">click any header to sort</span>
+</div>
+
+<div class="sheet"><div class="scroll">
+  <table><thead><tr id="hrow"></tr></thead><tbody id="rows"></tbody></table>
+</div></div>
+
+<footer id="foot">—</footer>
+
+<script>
+const EXPLORER="https://robinhoodchain.blockscout.com";
+const GMGN="https://gmgn.ai/robinhood/token/";
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function money(n,dp){ if(n==null||!isFinite(n))return "—";
+  return (n<0?"−":"")+"$"+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:dp??0,maximumFractionDigits:dp??0}); }
+function pct(n,dp){ return (n==null||!isFinite(n))?"—":n.toFixed(dp??0)+"%"; }
+function ts(t){ if(!t)return "—"; const d=new Date(t); return isNaN(d)?"—":d.toISOString().slice(5,16).replace("T"," "); }
+function ago(t){ if(!t)return "never"; const s=(Date.now()-new Date(t))/1000;
+  if(!isFinite(s))return "never";
+  if(s<90)return Math.round(s)+"s"; if(s<5400)return Math.round(s/60)+"m";
+  if(s<172800)return (s/3600).toFixed(1)+"h"; return Math.round(s/86400)+"d"; }
+function addr(a){ return `<a class="addr" target="_blank" rel="noopener noreferrer" href="${EXPLORER}/address/${esc(a)}">${esc(a.slice(0,10))}…${esc(a.slice(-6))}</a>`; }
+function txl(h){ return h?`<a class="ext" target="_blank" rel="noopener noreferrer" href="${EXPLORER}/tx/${esc(h)}">${esc(h.slice(0,6))}…${esc(h.slice(-4))}</a>`:"—"; }
+function coin(sym,token){ return token?`<a class="ext" target="_blank" rel="noopener noreferrer" href="${GMGN}${esc(token)}">${esc(sym||"?")}</a>`:esc(sym||"—"); }
+
+const COLS=[
+  {k:"tier",  t:"Tier",     cell:w=>`<span class="tag ${w.tier}">${w.tier==="clean"?"alerting":"quiet"}</span>`},
+  {k:"addr",  t:"Wallet",   cell:w=>addr(w.addr)},
+  {k:"winrate",t:"Win rate",r:1,cell:w=>w.winrate==null?"—":
+    `<span class="num">${pct(w.winrate*100,0)}</span> <span class="bar2" style="width:52px"><i style="width:${Math.max(2,Math.min(100,w.winrate*100))}%"></i></span>`},
+  {k:"n_trades",t:"Its trades",r:1,cell:w=>w.n_trades==null?"—":`<span class="num">${w.n_trades.toLocaleString()}</span>`},
+  {k:"seen",  t:"Seen by us",r:1,cell:w=>`<span class="num">${w.seen}</span>`},
+  {k:"buys",  t:"Buys",     r:1, cell:w=>`<span class="num">${w.buys}</span>`},
+  {k:"sells", t:"Sells",    r:1, cell:w=>`<span class="num">${w.sells}</span>`},
+  {k:"volume",t:"Volume",   r:1, cell:w=>`<span class="num">${money(w.volume)}</span>`},
+  {k:"biggest",t:"Biggest", r:1, cell:w=>`<span class="num">${money(w.biggest)}</span>`},
+  {k:"tokens",t:"Coins",    r:1, cell:w=>`<span class="num">${w.tokens}</span>`},
+  {k:"lastms",t:"Last move",r:1, cell:w=>`<span class="num">${ago(w.last)}</span>`},
+  {k:"lastsym",t:"Last coin",cell:w=>coin(w.lastsym,w.lasttoken)},
+  {k:"lasttx",t:"Last tx",  cell:w=>txl(w.lasttx)},
+];
+
+let WALLETS=[], TAB="all", SORT={k:"seen",dir:-1}, Q="", STAMP="";
+const TABS=[
+  {k:"all",   t:"All",      f:()=>true},
+  {k:"clean", t:"Alerting", f:w=>w.tier==="clean"},
+  {k:"core",  t:"Quiet",    f:w=>w.tier==="core"},
+  {k:"active",t:"Active",   f:w=>w.seen>0},
+  {k:"silent",t:"Never seen",f:w=>w.seen===0},
+];
+
+function head(){
+  document.getElementById("hrow").innerHTML=COLS.map(c=>{
+    const on=SORT.k===c.k, m=on?(SORT.dir===1?"▲":"▼"):"";
+    return `<th${c.r?' class="r"':''}><button type="button" data-k="${c.k}"
+      aria-label="Sort by ${c.t}" aria-sort="${on?(SORT.dir===1?"ascending":"descending"):"none"}"
+      ><span>${c.t}</span><span class="sortmark">${m}</span></button></th>`;}).join("");
+  document.querySelectorAll("#hrow button").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k;
+    SORT=SORT.k===k?{k,dir:-SORT.dir}:{k,dir:(["addr","tier","lastsym","lasttx"].includes(k)?1:-1)};
+    render();
+  });
+}
+
+function render(){
+  const tab=TABS.find(t=>t.k===TAB)||TABS[0];
+  let rs=WALLETS.filter(tab.f);
+  if(Q){const q=Q.toLowerCase();rs=rs.filter(w=>w.addr.toLowerCase().includes(q)||String(w.lastsym||"").toLowerCase().includes(q));}
+  const {k,dir}=SORT;
+  rs=rs.slice().sort((a,b)=>{
+    let x=a[k],y=b[k];
+    if(x==null&&y==null)return 0; if(x==null)return 1; if(y==null)return -1;
+    if(typeof x==="string"||typeof y==="string")return dir*String(x).localeCompare(String(y),"en",{numeric:true});
+    return dir*(x-y);
+  });
+  document.getElementById("tabs").innerHTML=TABS.map(t=>
+    `<button type="button" class="tab${t.k===TAB?" on":""}" data-t="${t.k}">${t.t}<span class="c">${WALLETS.filter(t.f).length}</span></button>`).join("");
+  document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;render();});
+  head();
+  document.getElementById("rows").innerHTML = rs.length
+    ? rs.map(w=>`<tr>`+COLS.map(c=>`<td${c.r?' class="r"':''}>${c.cell(w)}</td>`).join("")+`</tr>`).join("")
+    : `<tr><td colspan="${COLS.length}"><div class="empty">no wallet matches that filter</div></td></tr>`;
+  document.getElementById("foot").textContent=`${rs.length} of ${WALLETS.length} wallets shown · ${STAMP}`;
+}
+
+async function load(){
+  const [wl,fd]=await Promise.all([
+    fetch("wallets.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).catch(()=>null),
+    fetch("feed.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).catch(()=>({events:[]})),
+  ]);
+  if(!wl){document.getElementById("rows").innerHTML=
+    `<tr><td colspan="${COLS.length}"><div class="empty">could not load wallets.json</div></td></tr>`;return;}
+
+  const meta=wl.clean_meta||{};
+  const list=[];
+  (wl.core_28||[]).forEach(a=>list.push({addr:a.toLowerCase(),tier:"core"}));
+  (wl.clean_top||[]).forEach(a=>list.push({addr:a.toLowerCase(),tier:"clean",
+    winrate:(meta[a]||{}).winrate, n_trades:(meta[a]||{}).n_trades}));
+
+  const by={};
+  (fd.events||[]).forEach(e=>{
+    const a=(e.addr||"").toLowerCase(); if(!a)return;
+    const w=by[a]||(by[a]={seen:0,buys:0,sells:0,volume:0,biggest:0,toks:new Set(),last:null,lastsym:null,lasttoken:null,lasttx:null});
+    w.seen++; e.dir==="buy"?w.buys++:w.sells++;
+    w.volume+=e.usd||0; w.biggest=Math.max(w.biggest,e.usd||0); w.toks.add(e.token);
+    if(!w.last||(e.ts||"")>w.last){w.last=e.ts;w.lastsym=e.sym;w.lasttoken=e.token;w.lasttx=e.tx;}
+  });
+
+  WALLETS=list.map(w=>{
+    const s=by[w.addr]||{seen:0,buys:0,sells:0,volume:0,biggest:0,toks:new Set(),last:null};
+    return {...w,seen:s.seen,buys:s.buys,sells:s.sells,volume:s.volume,biggest:s.biggest,
+      tokens:s.toks.size,last:s.last,lastms:s.last?new Date(s.last).getTime():null,
+      lastsym:s.lastsym,lasttoken:s.lasttoken,lasttx:s.lasttx};
+  });
+
+  const day=Date.now()-86400000;
+  document.getElementById("s-n").textContent=WALLETS.length;
+  document.getElementById("s-clean").textContent=WALLETS.filter(w=>w.tier==="clean").length;
+  document.getElementById("s-act").textContent=WALLETS.filter(w=>w.lastms&&w.lastms>day).length;
+  document.getElementById("s-tr").textContent=WALLETS.reduce((n,w)=>n+w.seen,0).toLocaleString();
+  STAMP = fd.updated ? "feed updated "+ts(fd.updated)+" UTC · recent window only" : "";
+  render();
+}
+document.getElementById("q").addEventListener("input",e=>{Q=e.target.value.trim();render();});
+load(); setInterval(load,60000);
+</script>
+</body>
+</html>
