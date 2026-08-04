@@ -103,6 +103,13 @@ a.ext::after{content:"↗";font-size:9px;vertical-align:super;margin-left:2px;op
 sup.why{color:var(--gold);font-size:10px;cursor:help;margin-left:2px}
 .sizebar{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:12px;font-size:12.5px;color:var(--muted)}
 .sizebar b{color:var(--ink);font-family:var(--mono)}
+.days{display:flex;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px;
+  margin-top:14px;overflow-x:auto}
+.day{background:var(--panel2);padding:8px 11px;min-width:96px;flex:1 0 auto}
+.day .dd{font:700 10px/1.4 var(--mono);color:var(--faint);letter-spacing:.1em}
+.day .dv{font-family:var(--mono);font-size:15px;font-weight:600;margin-top:2px}
+.day .dn{font-size:11px;color:var(--muted);margin-top:1px}
+.day.partial{outline:1px dashed var(--gold);outline-offset:-1px}
 footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
 .err{color:var(--ox);font-family:var(--mono);font-size:13px}
 </style>
@@ -133,6 +140,7 @@ footer{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
   <div class="kpis" id="kpis"></div>
   <div id="outlier"></div>
   <div class="sizebar" id="sizebar"></div>
+  <div id="daystrip"></div>
   <p class="note" id="hl-note"></p>
 </section>
 
@@ -329,6 +337,18 @@ function render(){
        <span>smallest bet <b>${money(sz.min_stake,0)}</b></span>
        <span>largest bet <b>${money(sz.max_stake,0)}</b></span>
        <span>most money out at once <b>${money(d.open_stake)}</b></span>` : "";
+
+  // ---------- day by day ----------
+  const dd=d.days||[];
+  document.getElementById("daystrip").innerHTML = dd.length
+    ? `<div class="days">`+dd.map((x,i)=>`<div class="day${i===dd.length-1?" partial":""}">
+         <div class="dd">${esc(x.day.slice(5))}${i===dd.length-1?" · today":""}</div>
+         <div class="dv ${cls(x.pnl)}">${(x.pnl>=0?"+":"−")+money(Math.abs(x.pnl),0)}</div>
+         <div class="dn">${x.wins}/${x.n} up · ${pct(x.roi_pct,1)}</div></div>`).join("")+`</div>
+       <p class="note">Each column is the day a position was <b>opened</b>. Only complete days mean
+       anything — today's column is still filling, and anything before ${esc(dd.length>1?dd[dd.length-2].day.slice(5):"")}
+       came from a feed that was deleting its own history, so those days are under-counted.</p>`
+    : "";
 
   // ---------- book ----------
   const rows=[];
