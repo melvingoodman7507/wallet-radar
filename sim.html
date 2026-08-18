@@ -130,6 +130,10 @@ a.ext:hover{color:var(--ink)}
 .empty{padding:26px 14px;color:var(--faint);font-family:var(--mono);font-size:12px;background:var(--row)}
 footer{max-width:1780px;margin:0 auto;padding:0 14px 40px;color:var(--faint);font-size:11px;
   font-family:var(--mono)}
+.olrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.olk{display:inline-flex;align-items:baseline;gap:5px;border:1px solid var(--rule2);border-radius:5px;
+     padding:3px 7px;font:600 11px/1.35 var(--ui)}
+.olp{color:var(--muted);font-weight:500}
 @media(max-width:700px){.stripin{gap:5px 14px}.stat .vl{font-size:12.5px}}
 </style>
 </head>
@@ -346,15 +350,33 @@ function render(){
 
 
   const ol=d.outlier||{}, s1=ol.strip&&ol.strip[0]?ol.strip[0].pnl:null;
+  // The strip ladder is PROPORTIONAL now, so "top 5%" means the same thing at any book size, and
+  // the two numbers under it need no chosen k at all: how many positions would have to vanish to
+  // flip the sign, and how often this book makes money when its own trades are resampled.
+  const bt=ol.bootstrap||null, fn=ol.min_removed_to_flip;
+  const ladder = (ol.strip||[]).map(x=>
+      `<span class="olk">top ${x.removed}<span class="olp">${x.pct_of_trades}%</span>
+       <b class="${x.pnl>0?'gain':'loss'}">${money(x.pnl)}</b></span>`).join("");
+  const frag = fn==null ? "" :
+      `removing the <b>${fn} ${esc(ol.flip_removes||"")}</b> of <b>${ol.n_positions}</b> positions
+       (<b>${ol.min_removed_to_flip_pct}%</b>) flips the sign`;
+  const half = ol.positions_for_half_the_winnings==null ? "" :
+      ` · <b>${ol.positions_for_half_the_winnings}</b> positions make half of all winnings`;
+  const boots = !bt ? "" :
+      `<br>resampling its own trades ${bt.resamples} times, this book is profitable in
+       <b>${bt.share_profitable_pct}%</b> of alternative months
+       <span class="olp">p05 ${money(bt.p05)} · median ${money(bt.p50)} · p95 ${money(bt.p95)}</span>`;
   document.getElementById("flag").innerHTML = (ol.best_sym==null||s1==null)?"":
     (s1>0
       ? `<div class="flagin ok"><span class="ft">outlier test · pass</span><span class="fb">
          Drop the best trade (<b>${esc(ol.best_sym)}</b>, ${money(ol.best_pnl)}) and the book still holds
-         <b>${money(s1)}</b>. It is not resting on one coin.</span></div>`
+         <b>${money(s1)}</b>. It is not resting on one coin.<br>${frag}${half}${boots}
+         <br><span class="olrow">${ladder}</span></span></div>`
       : `<div class="flagin"><span class="ft">outlier test · fail</span><span class="fb">
-         <b>${esc(ol.best_sym)}</b> alone made ${money(ol.best_pnl)}${ol.best_share_pct!=null?` — <b>${ol.best_share_pct}%</b> of all profit`:""}.
+         <b>${esc(ol.best_sym)}</b> alone made ${money(ol.best_pnl)}${ol.best_share_of_gross_pct!=null?` — <b>${ol.best_share_of_gross_pct}%</b> of everything the winners made`:""}.
          Drop that one trade and the book is <b>${money(s1)}</b>. The median position is
-         <b>${signed(ol.median_trade)}</b>. The headline is one coin, not an edge.</span></div>`);
+         <b>${signed(ol.median_trade)}</b>.<br>${frag}${half}${boots}
+         <br><span class="olrow">${ladder}</span></span></div>`);
 
   const dd=d.days||[];
   document.getElementById("days").innerHTML=dd.map((x,i)=>`<div class="dcell${i===dd.length-1?" now":""}">
